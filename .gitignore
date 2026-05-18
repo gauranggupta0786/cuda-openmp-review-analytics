@@ -1,0 +1,39 @@
+# ─── Compiled Binaries ───────────────────────────────────────────────────────
+baseline
+opt
+sentiment
+seq
+omp
+a.out
+*.out
+*.exe
+*.o
+*.obj
+
+# ─── Generated Dataset Files (too large / auto-generated) ────────────────────
+reviews.csv
+reviews_Movies_and_TV_5.json.gz
+reviews_Movies_and_TV_5.json
+vader_lexicon.txt
+
+# ─── NVIDIA Profiler Output ──────────────────────────────────────────────────
+*.nsys-rep
+*.sqlite
+*.qdrep
+*.qdstrm
+nsys-report*
+report*.nsys-rep
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ─── IDE / OS ────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

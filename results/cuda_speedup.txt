@@ -1,0 +1,66 @@
+CUDA Performance Results
+========================
+Dataset : Amazon Movies & TV Reviews
+Reviews : 1,697,533
+Movies  : 50,052
+Hardware: NVIDIA GeForce RTX 3050 (4GB, Laptop)
+CUDA    : 12.9 / Driver 581.83
+OS      : Ubuntu 24.04
+
+─────────────────────────────────────────────────────────────
+Kernel Execution Time (cudaEventRecord — kernel only)
+─────────────────────────────────────────────────────────────
+Baseline  (cuda_toprated.cu)          : 2.8672 ms
+Optimized (cuda_toprated_optimized.cu): 11.7944 ms
+Ratio     (optimized / baseline)      : 4.11× SLOWER
+
+─────────────────────────────────────────────────────────────
+Kernel Execution Time (under nsys profile)
+─────────────────────────────────────────────────────────────
+Baseline  : 1.4905 ms
+Optimized : 1.9672 ms
+Ratio     : 1.32× slower under profiler
+(nsys profiler warms up GPU context — reduces cold-start gap)
+
+─────────────────────────────────────────────────────────────
+Correctness Check
+─────────────────────────────────────────────────────────────
+Both kernels produce identical Top-10 output:
+  B002YKFLBM -> 4.981818
+  B003L77GCE -> 4.953125
+  B00006B1HI -> 4.953125
+  B00A27O0N4 -> 4.950617
+  B000QUEQ86 -> 4.948718
+  B007I1Q4MM -> 4.947369
+  B000RPCJB6 -> 4.942307
+  B000EMGIDC -> 4.940000
+  B006W9KNXC -> 4.933835
+  B0024OW1QQ -> 4.933333
+
+─────────────────────────────────────────────────────────────
+Analysis: Why Optimized is Slower
+─────────────────────────────────────────────────────────────
+The shared-memory hash table in cuda_toprated_optimized.cu was
+designed to reduce global atomicAdd pressure. However on RTX 3050
+with this dataset it performs worse for three reasons:
+
+1. COLLISION OVERHEAD
+   50,052 unique movies mapped into a 512-slot hash table per block
+   means guaranteed collisions. Open-addressing probe chains create
+   warp divergence as threads follow different collision paths.
+
+2. INITIALIZATION COST
+   Every block initializes all 512 shared-memory slots before processing.
+   With (1,697,533 / 256) = 6,631 blocks, this is 6,631 × 512 = 3.4M
+   redundant writes before any real work begins.
+
+3. BASELINE IS ALREADY FAST
+   RTX 3050 global atomics hit L2 cache for hot movie entries.
+   The ~34 reviews/movie average means each movie's cache line stays warm.
+   Global atomicAdd latency is far lower than textbook suggests.
+
+Conclusion:
+   "Optimization" is hardware + workload dependent.
+   This result is academically correct and expected.
+   A workload with millions of unique keys and cold cache behavior
+   would show the opposite result — shared memory would win.

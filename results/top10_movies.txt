@@ -1,0 +1,25 @@
+Top 10 Rated Movies — Amazon Movies & TV
+=========================================
+Source  : reviews_Movies_and_TV_5.json.gz
+Reviews : 1,697,533 total
+Movies  : 50,052 unique
+Filter  : Minimum 50 reviews per movie
+Method  : CUDA parallel reduction (cuda_toprated.cu)
+Hardware: NVIDIA GeForce RTX 3050, CUDA 12.9
+Time    : 2.8672 ms (kernel) via cudaEventRecord
+
+Rank  ASIN          Avg Rating   (scale: 1.0 – 5.0)
+────  ────────────  ──────────
+ 1    B002YKFLBM    4.981818
+ 2    B003L77GCE    4.953125
+ 3    B00006B1HI    4.953125
+ 4    B00A27O0N4    4.950617
+ 5    B000QUEQ86    4.948718
+ 6    B007I1Q4MM    4.947369
+ 7    B000RPCJB6    4.942307
+ 8    B000EMGIDC    4.940000
+ 9    B006W9KNXC    4.933835
+10    B0024OW1QQ    4.933333
+
+Note: ASIN is Amazon's internal product identifier.
+      To look up a title: https://www.amazon.com/dp/<ASIN>

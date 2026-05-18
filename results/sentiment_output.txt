@@ -1,0 +1,29 @@
+Sentiment Analysis Output
+==========================
+Program : cuda_reviewanalysis.cu
+Lexicon : vader_lexicon.txt (7,520 words loaded)
+Method  : CUDA kernel — one thread per review
+Hardware: NVIDIA GeForce RTX 3050, CUDA 12.9
+
+Scoring : sentiment_score = Σ (lexicon_score × frequency)
+Label   : POSITIVE if score > 0 | NEGATIVE if score ≤ 0
+
+─────────────────────────────────────────────────────────────
+Results (4 sample reviews)
+─────────────────────────────────────────────────────────────
+POSITIVE: This movie was amazing and wonderful
+NEGATIVE: This was terrible and boring
+POSITIVE: Absolutely fantastic experience
+NEGATIVE: Worst movie ever
+
+─────────────────────────────────────────────────────────────
+Program Output (exact terminal output)
+─────────────────────────────────────────────────────────────
+Lexicon loaded: 7520 words
+Total reviews: 4
+
+Sentiment Results:
+POSITIVE: This movie was amazing and wonderful
+NEGATIVE: This was terrible and boring
+POSITIVE: Absolutely fantastic experience
+NEGATIVE: Worst movie ever

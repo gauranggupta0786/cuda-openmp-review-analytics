@@ -1,0 +1,80 @@
+OpenMP Scaling Results
+======================
+Task    : Elaborate Reviewer Detection (≥50 words, ≥5 reviews)
+Dataset : reviews_text.csv (5 reviews, reviewer A1 — sample)
+Hardware: CPU, Ubuntu 24.04, g++ -fopenmp
+Note    : On sample data; full dataset would show different absolute times
+
+─────────────────────────────────────────────────────────────
+Sequential Baseline
+─────────────────────────────────────────────────────────────
+  Program : ./seq  (c_elaborate.c)
+  Time    : 0.003s  (time ./seq → real 0m0.003s)
+  Output  : A1 -> Reviews: 5, Avg Length: 55.00
+
+─────────────────────────────────────────────────────────────
+OpenMP Timing (omp_get_wtime() — averaged over 4 runs)
+─────────────────────────────────────────────────────────────
+  Threads  Time (avg)   vs Sequential   Speedup
+  ───────  ──────────   ─────────────   ───────
+  2        0.221 s      74× slower      0.014×
+  4        0.374 s      125× slower     0.008×
+  8        0.592 s      197× slower     0.005×
+  16       0.971 s      324× slower     0.003×
+
+wall-clock (time ./omp — all 4 thread configs per run):
+  Run 1: 1.768s  (user: 16.826s)
+  Run 2: 1.749s  (user: 17.197s)
+  Run 3: 2.370s  (user: 22.362s)
+  Run 4: 2.303s  (user: 21.963s)
+
+user time >> real time confirms real parallelism (threads running),
+but the work done in parallel is blocked by a serial bottleneck.
+
+─────────────────────────────────────────────────────────────
+Root Cause Analysis
+─────────────────────────────────────────────────────────────
+The implementation uses:
+  #pragma omp critical
+  {
+    fgets(line, sizeof(line), fp);   ← FULLY SERIALIZED
+  }
+
+Every thread acquires an exclusive lock to read ONE line from the file.
+No two threads can read simultaneously. All threads spend most of
+their time waiting on this lock rather than doing computation.
+
+This makes the parallel version equivalent to sequential execution
+PLUS the overhead of:
+  - Thread creation and destruction per omp parallel block
+  - Lock acquire/release per line (critical section entry cost)
+  - Cache thrashing as threads compete for the file pointer
+  - Scheduling overhead for 2–16 OS threads
+
+─────────────────────────────────────────────────────────────
+Amdahl's Law Derivation
+─────────────────────────────────────────────────────────────
+Let f = serial fraction of the program.
+
+If f ≈ 0.99 (99% of work is in the critical section):
+
+  Speedup(N) = 1 / (f + (1−f)/N)
+             = 1 / (0.99 + 0.01/N)
+
+  N=2  → Speedup = 1 / (0.99 + 0.005) = 1.005×   (virtually no gain)
+  N=4  → Speedup = 1 / (0.99 + 0.002) = 1.008×
+  N=∞  → Speedup = 1 / 0.99          = 1.01×     (theoretical max)
+
+Observed: speedup is actually < 1 because overhead > marginal gain.
+
+─────────────────────────────────────────────────────────────
+What a Correct Parallel Implementation Would Do
+─────────────────────────────────────────────────────────────
+1. Read ALL lines into memory first (sequential, fast)
+2. Use #pragma omp parallel for over the in-memory array
+3. Each thread independently processes its own lines
+4. Use atomic operations only for the hash map writes
+5. Expected speedup: 3–6× on 8 threads for compute-heavy reviews
+
+The current implementation demonstrates exactly why Amdahl's Law
+matters: no amount of parallelism helps when the bottleneck is serial.
